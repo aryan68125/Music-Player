@@ -10,3 +10,7 @@ class SuccessMessage(str, Enum):
     QUEUE_MODE_UPDATED = "Queue mode updated."
     QUEUE_TRACK_RESOLVED = "Queue resolved next or previous track."
     TRACK_ADDED_TO_FAVORITES = "Track added to favorites."
+    PLAYLIST_CREATED = "Playlist created."
+    PLAYLIST_UPDATED = "Playlist updated."
+    PLAYLIST_DELETED = "Playlist deleted."
+    PLAYLIST_TRACKS_UPDATED = "Playlist tracks updated."
