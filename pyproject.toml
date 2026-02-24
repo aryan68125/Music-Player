@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "music-player"
+version = "0.1.0"
+description = "Cross-platform music player using PyQt, Python, and Rust"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Music Player Team" }]
+dependencies = [
+  "pydantic>=2.10,<3",
+  "PyQt6==6.7.1",
+  "mutagen>=1.47,<2"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=9.0,<10",
+  "pytest-qt>=4.4,<5"
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "-ra"
+testpaths = ["tests"]
