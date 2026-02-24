@@ -7,3 +7,5 @@ class SuccessMessage(str, Enum):
     PLAYBACK_PAUSED = "Playback paused."
     SEEK_COMPLETED = "Seek completed."
     PLAYBACK_SPEED_UPDATED = "Playback speed updated."
+    QUEUE_MODE_UPDATED = "Queue mode updated."
+    QUEUE_TRACK_RESOLVED = "Queue resolved next or previous track."
