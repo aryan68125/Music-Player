@@ -26,6 +26,78 @@ from app.front_end.now_playing_bar import NowPlayingBar
 from app.front_end.playlist_view import PlaylistView
 
 
+def build_app_stylesheet() -> str:
+    return """
+            QMainWindow {
+                background: #0F131A;
+                color: #E7ECF3;
+            }
+            QLabel {
+                color: #E7ECF3;
+            }
+            QListWidget {
+                background: #151B24;
+                border: 1px solid #263041;
+                border-radius: 8px;
+                color: #DEE6F2;
+            }
+            QToolBar {
+                background: #121925;
+                border: 1px solid #263041;
+                border-radius: 8px;
+                spacing: 8px;
+                padding: 6px;
+            }
+            QToolButton {
+                background: #243247;
+                color: #E7ECF3;
+                border: 1px solid #31435E;
+                border-radius: 8px;
+                padding: 6px 10px;
+            }
+            #nowPlayingBar {
+                background: #151B24;
+                border: 1px solid #263041;
+                border-radius: 12px;
+            }
+            QPushButton {
+                background: #243247;
+                color: #E7ECF3;
+                border: 1px solid #31435E;
+                border-radius: 8px;
+                padding: 6px 10px;
+            }
+            QPushButton:checked {
+                background: #2F4E73;
+            }
+            QComboBox {
+                background: #1E2838;
+                color: #E7ECF3;
+                border: 1px solid #31435E;
+                border-radius: 8px;
+                padding: 4px 8px;
+            }
+            QComboBox QAbstractItemView {
+                background: #1E2838;
+                color: #E7ECF3;
+                border: 1px solid #31435E;
+                selection-background-color: #2F4E73;
+                selection-color: #E7ECF3;
+            }
+            QSlider::groove:horizontal {
+                height: 4px;
+                border-radius: 2px;
+                background: #2A3548;
+            }
+            QSlider::handle:horizontal {
+                width: 14px;
+                margin: -6px 0;
+                border-radius: 7px;
+                background: #E7ECF3;
+            }
+            """
+
+
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
@@ -107,70 +179,7 @@ class MainWindow(QMainWindow):
         self._player.mediaStatusChanged.connect(self._on_media_status_changed)
 
     def _apply_theme(self) -> None:
-        self.setStyleSheet(
-            """
-            QMainWindow {
-                background: #0F131A;
-                color: #E7ECF3;
-            }
-            QLabel {
-                color: #E7ECF3;
-            }
-            QListWidget {
-                background: #151B24;
-                border: 1px solid #263041;
-                border-radius: 8px;
-                color: #DEE6F2;
-            }
-            QToolBar {
-                background: #121925;
-                border: 1px solid #263041;
-                border-radius: 8px;
-                spacing: 8px;
-                padding: 6px;
-            }
-            QToolButton {
-                background: #243247;
-                color: #E7ECF3;
-                border: 1px solid #31435E;
-                border-radius: 8px;
-                padding: 6px 10px;
-            }
-            #nowPlayingBar {
-                background: #151B24;
-                border: 1px solid #263041;
-                border-radius: 12px;
-            }
-            QPushButton {
-                background: #243247;
-                color: #E7ECF3;
-                border: 1px solid #31435E;
-                border-radius: 8px;
-                padding: 6px 10px;
-            }
-            QPushButton:checked {
-                background: #2F4E73;
-            }
-            QComboBox {
-                background: #1E2838;
-                color: #E7ECF3;
-                border: 1px solid #31435E;
-                border-radius: 8px;
-                padding: 4px 8px;
-            }
-            QSlider::groove:horizontal {
-                height: 4px;
-                border-radius: 2px;
-                background: #2A3548;
-            }
-            QSlider::handle:horizontal {
-                width: 14px;
-                margin: -6px 0;
-                border-radius: 7px;
-                background: #E7ECF3;
-            }
-            """
-        )
+        self.setStyleSheet(build_app_stylesheet())
 
     def _add_songs(self) -> None:
         files, _ = QFileDialog.getOpenFileNames(
