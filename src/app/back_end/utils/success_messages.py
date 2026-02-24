@@ -9,3 +9,4 @@ class SuccessMessage(str, Enum):
     PLAYBACK_SPEED_UPDATED = "Playback speed updated."
     QUEUE_MODE_UPDATED = "Queue mode updated."
     QUEUE_TRACK_RESOLVED = "Queue resolved next or previous track."
+    TRACK_ADDED_TO_FAVORITES = "Track added to favorites."

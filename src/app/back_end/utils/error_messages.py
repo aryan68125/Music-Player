@@ -9,3 +9,4 @@ class ErrorMessage(str, Enum):
     INVALID_REPEAT_MODE = "Invalid repeat mode."
     INVALID_SHUFFLE_FLAG = "Invalid shuffle flag."
     TRACK_NOT_FOUND_IN_QUEUE = "Track not found in queue."
+    TRACK_NOT_FOUND = "Track not found."
