@@ -6,7 +6,7 @@ fn backend_version() -> &'static str {
 }
 
 #[pymodule]
-fn rust_back_end(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn rust_back_end_native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(backend_version, m)?)?;
     Ok(())
 }
