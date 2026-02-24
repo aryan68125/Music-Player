@@ -14,3 +14,7 @@ class SuccessMessage(str, Enum):
     PLAYLIST_UPDATED = "Playlist updated."
     PLAYLIST_DELETED = "Playlist deleted."
     PLAYLIST_TRACKS_UPDATED = "Playlist tracks updated."
+    LIBRARY_SCAN_COMPLETED = "Library scan completed."
+    METADATA_READ_COMPLETED = "Metadata read completed."
+    METADATA_WRITE_COMPLETED = "Metadata write completed."
+    ARTWORK_EXTRACTION_COMPLETED = "Artwork extraction completed."

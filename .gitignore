@@ -6,3 +6,5 @@ __pycache__/
 rust_back_end/target/
 data/*.db
 data/*.sqlite3
+data/manual_*
+data/manual_*/
