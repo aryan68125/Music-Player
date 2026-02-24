@@ -66,6 +66,12 @@ pub fn write_metadata(path: String, changes: HashMap<String, String>) -> Result<
     let mut updated_fields: Vec<String> = Vec::new();
 
     for (key, value) in changes {
+        if value.trim().is_empty() {
+            merged.remove(&key);
+            updated_fields.push(key);
+            continue;
+        }
+
         merged.insert(key.clone(), value);
         updated_fields.push(key);
     }
