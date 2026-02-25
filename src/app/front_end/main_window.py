@@ -12,8 +12,11 @@ from PyQt6.QtWidgets import (
     QLabel,
     QListWidget,
     QMainWindow,
+    QMenu,
     QMessageBox,
+    QSizePolicy,
     QSplitter,
+    QToolButton,
     QToolBar,
     QVBoxLayout,
     QWidget,
@@ -84,6 +87,13 @@ def build_app_stylesheet() -> str:
                 selection-background-color: #2F4E73;
                 selection-color: #E7ECF3;
             }
+            QMessageBox {
+                background: #111722;
+                color: #E7ECF3;
+            }
+            QMessageBox QLabel {
+                color: #E7ECF3;
+            }
             QSlider::groove:horizontal {
                 height: 4px;
                 border-radius: 2px;
@@ -106,6 +116,11 @@ class MainWindow(QMainWindow):
 
         self._track_paths: list[Path] = []
         self._current_index: int | None = None
+
+        self._autoplay_enabled = True
+        self._settings_menu: QMenu | None = None
+        self._settings_button: QToolButton | None = None
+        self._autoplay_action: QAction | None = None
 
         self._metadata_controller = MetadataController()
 
@@ -131,6 +146,27 @@ class MainWindow(QMainWindow):
         edit_action = QAction("Edit Metadata", self)
         edit_action.triggered.connect(self._open_metadata_editor)
         toolbar.addAction(edit_action)
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        toolbar.addWidget(spacer)
+
+        settings_menu = QMenu("Settings", self)
+        autoplay_action = QAction("Autoplay newly added songs", self)
+        autoplay_action.setCheckable(True)
+        autoplay_action.setChecked(True)
+        autoplay_action.toggled.connect(self._on_autoplay_toggled)
+        settings_menu.addAction(autoplay_action)
+
+        settings_button = QToolButton(self)
+        settings_button.setText("Settings")
+        settings_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        settings_button.setMenu(settings_menu)
+        toolbar.addWidget(settings_button)
+
+        self._settings_menu = settings_menu
+        self._settings_button = settings_button
+        self._autoplay_action = autoplay_action
 
     def _build_ui(self) -> None:
         root = QWidget()
@@ -198,7 +234,7 @@ class MainWindow(QMainWindow):
 
         self.playlist_view.set_tracks(self._track_paths)
         if self._current_index is None and self._track_paths:
-            self._play_track_at_index(0)
+            self._load_track_at_index(0, autoplay=self._autoplay_enabled)
 
     def _toggle_play_pause(self) -> None:
         if self._player.playbackState() == QMediaPlayer.PlaybackState.PlayingState:
@@ -209,6 +245,9 @@ class MainWindow(QMainWindow):
             self._player.play()
 
     def _play_track_at_index(self, index: int) -> None:
+        self._load_track_at_index(index, autoplay=True)
+
+    def _load_track_at_index(self, index: int, autoplay: bool) -> None:
         if index < 0 or index >= len(self._track_paths):
             return
 
@@ -216,7 +255,12 @@ class MainWindow(QMainWindow):
         path = self._track_paths[index]
         self.playlist_view.set_current_index(index)
         self._player.setSource(QUrl.fromLocalFile(str(path)))
-        self._player.play()
+
+        if autoplay:
+            self._player.play()
+        else:
+            self._player.pause()
+            self.now_playing_bar.set_playing(False)
 
         metadata_response = self._metadata_controller.read_metadata(str(path))
         title = path.stem
@@ -227,6 +271,9 @@ class MainWindow(QMainWindow):
 
         self.now_playing_bar.set_track_info(title, artist)
         self._update_album_art(path)
+
+    def _on_autoplay_toggled(self, enabled: bool) -> None:
+        self._autoplay_enabled = bool(enabled)
 
     def _play_next_track(self) -> None:
         if self._current_index is None or not self._track_paths:
