@@ -94,6 +94,31 @@ def build_app_stylesheet() -> str:
             QMessageBox QLabel {
                 color: #E7ECF3;
             }
+            QFileDialog {
+                background: #111722;
+                color: #E7ECF3;
+            }
+            QFileDialog QTreeView,
+            QFileDialog QListView {
+                background: #151B24;
+                color: #E7ECF3;
+                selection-background-color: #2F4E73;
+                selection-color: #E7ECF3;
+                border: 1px solid #31435E;
+            }
+            QFileDialog QHeaderView::section {
+                background: #1E2838;
+                color: #E7ECF3;
+                border: 1px solid #31435E;
+                padding: 4px;
+            }
+            QFileDialog QLineEdit {
+                background: #1E2838;
+                color: #E7ECF3;
+                border: 1px solid #31435E;
+                border-radius: 6px;
+                padding: 4px 8px;
+            }
             QSlider::groove:horizontal {
                 height: 4px;
                 border-radius: 2px;
@@ -115,6 +140,7 @@ class MainWindow(QMainWindow):
         self.resize(1180, 760)
 
         self._track_paths: list[Path] = []
+        self._track_display_titles: dict[str, str] = {}
         self._current_index: int | None = None
 
         self._autoplay_enabled = True
@@ -143,15 +169,15 @@ class MainWindow(QMainWindow):
         add_action.triggered.connect(self._add_songs)
         toolbar.addAction(add_action)
 
-        edit_action = QAction("Edit Metadata", self)
-        edit_action.triggered.connect(self._open_metadata_editor)
-        toolbar.addAction(edit_action)
-
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         toolbar.addWidget(spacer)
 
         settings_menu = QMenu("Settings", self)
+        edit_metadata_action = QAction("Edit Song's Metadata", self)
+        edit_metadata_action.triggered.connect(self._open_metadata_editor)
+        settings_menu.addAction(edit_metadata_action)
+
         autoplay_action = QAction("Autoplay newly added songs", self)
         autoplay_action.setCheckable(True)
         autoplay_action.setChecked(True)
@@ -218,12 +244,7 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(build_app_stylesheet())
 
     def _add_songs(self) -> None:
-        files, _ = QFileDialog.getOpenFileNames(
-            self,
-            "Select songs",
-            str(Path.home()),
-            "Audio Files (*.mp3 *.m4a *.flac *.wav *.ogg *.aac *.opus *.aiff *.wma)",
-        )
+        files = self._select_music_files()
         if not files:
             return
 
@@ -231,10 +252,26 @@ class MainWindow(QMainWindow):
             path = Path(file_path)
             if path not in self._track_paths:
                 self._track_paths.append(path)
+                self._track_display_titles[str(path)] = self._resolve_track_display_title(path)
 
-        self.playlist_view.set_tracks(self._track_paths)
+        self._refresh_playlist_view()
         if self._current_index is None and self._track_paths:
             self._load_track_at_index(0, autoplay=self._autoplay_enabled)
+
+    def _select_music_files(self) -> list[str]:
+        dialog = QFileDialog(
+            self,
+            "Select songs",
+            str(Path.home()),
+        )
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
+        dialog.setNameFilter("Audio Files (*.mp3 *.m4a *.flac *.wav *.ogg *.aac *.opus *.aiff *.wma)")
+        dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
+        dialog.setStyleSheet(build_app_stylesheet())
+
+        if dialog.exec():
+            return dialog.selectedFiles()
+        return []
 
     def _toggle_play_pause(self) -> None:
         if self._player.playbackState() == QMediaPlayer.PlaybackState.PlayingState:
@@ -263,12 +300,13 @@ class MainWindow(QMainWindow):
             self.now_playing_bar.set_playing(False)
 
         metadata_response = self._metadata_controller.read_metadata(str(path))
-        title = path.stem
+        title = self._resolve_track_display_title(path, metadata_response)
         artist = "Local File"
         if metadata_response.status and isinstance(metadata_response.data, dict):
-            title = metadata_response.data.get("title") or title
             artist = metadata_response.data.get("artist") or artist
 
+        self._track_display_titles[str(path)] = title
+        self._refresh_playlist_view()
         self.now_playing_bar.set_track_info(title, artist)
         self._update_album_art(path)
 
@@ -347,8 +385,11 @@ class MainWindow(QMainWindow):
 
         refreshed = self._metadata_controller.read_metadata(str(track_path))
         if refreshed.status and isinstance(refreshed.data, dict):
+            refreshed_title = self._resolve_track_display_title(track_path, refreshed)
+            self._track_display_titles[str(track_path)] = refreshed_title
+            self._refresh_playlist_view()
             self.now_playing_bar.set_track_info(
-                refreshed.data.get("title") or track_path.stem,
+                refreshed_title,
                 refreshed.data.get("artist") or "Local File",
             )
 
@@ -391,3 +432,22 @@ class MainWindow(QMainWindow):
             return None
 
         return None
+
+    def _refresh_playlist_view(self) -> None:
+        self.playlist_view.set_tracks(self._track_paths, self._track_display_titles)
+        if self._current_index is not None:
+            self.playlist_view.set_current_index(self._current_index)
+
+    @staticmethod
+    def _title_from_metadata_value(path: Path, title_value: object) -> str:
+        if isinstance(title_value, str):
+            normalized = title_value.strip()
+            if normalized:
+                return normalized
+        return path.stem
+
+    def _resolve_track_display_title(self, path: Path, metadata_response=None) -> str:
+        response = metadata_response or self._metadata_controller.read_metadata(str(path))
+        if response.status and isinstance(response.data, dict):
+            return self._title_from_metadata_value(path, response.data.get("title"))
+        return path.stem

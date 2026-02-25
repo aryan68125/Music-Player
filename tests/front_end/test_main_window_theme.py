@@ -20,3 +20,13 @@ def test_message_box_has_contrasting_text_and_background():
     assert "background: #111722;" in style
     assert "QMessageBox QLabel {" in style
     assert "color: #E7ECF3;" in style
+
+
+def test_file_dialog_has_contrasting_theme_rules():
+    style = build_app_stylesheet()
+
+    assert "QFileDialog {" in style
+    assert "QFileDialog QTreeView" in style
+    assert "QFileDialog QListView" in style
+    assert "QFileDialog QHeaderView::section" in style
+    assert "QFileDialog QLineEdit" in style

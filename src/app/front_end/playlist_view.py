@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, pyqtSignal
@@ -37,10 +38,11 @@ class PlaylistView(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.list_widget)
 
-    def set_tracks(self, track_paths: list[Path]) -> None:
+    def set_tracks(self, track_paths: list[Path], display_titles: Mapping[str, str] | None = None) -> None:
         self.list_widget.clear()
+        display_titles = display_titles or {}
         for path in track_paths:
-            item = QListWidgetItem(path.name)
+            item = QListWidgetItem(display_titles.get(str(path)) or path.stem)
             item.setToolTip(str(path))
             item.setData(Qt.ItemDataRole.UserRole, str(path))
             self.list_widget.addItem(item)
