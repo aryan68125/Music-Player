@@ -18,3 +18,5 @@ class SuccessMessage(str, Enum):
     METADATA_READ_COMPLETED = "Metadata read completed."
     METADATA_WRITE_COMPLETED = "Metadata write completed."
     ARTWORK_EXTRACTION_COMPLETED = "Artwork extraction completed."
+    ARTWORK_UPDATED = "Artwork updated."
+    ARTWORK_REMOVED = "Artwork removed."

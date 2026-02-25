@@ -18,3 +18,8 @@ class ErrorMessage(str, Enum):
     INVALID_LIBRARY_SCAN_PATHS = "Invalid library scan paths."
     INVALID_METADATA_CHANGES = "Invalid metadata changes payload."
     RUST_BACKEND_OPERATION_FAILED = "Rust backend operation failed."
+    ARTWORK_FORMAT_NOT_SUPPORTED = "Artwork embed is not supported for this audio format."
+    ARTWORK_IMAGE_NOT_FOUND = "Artwork image file was not found."
+    INVALID_ARTWORK_IMAGE = "Artwork image is invalid. Use JPG or PNG."
+    ARTWORK_UPDATE_FAILED = "Artwork update failed."
+    ARTWORK_REMOVE_FAILED = "Artwork removal failed."

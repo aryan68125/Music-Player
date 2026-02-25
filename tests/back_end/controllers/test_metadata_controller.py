@@ -40,6 +40,26 @@ class _InMemoryMetadataBridge:
         )
 
 
+class _FakeArtworkService:
+    def __init__(self) -> None:
+        self.replace_calls: list[tuple[str, str]] = []
+        self.remove_calls: list[str] = []
+
+    def replace_artwork(self, track_path: str, image_path: str):
+        self.replace_calls.append((track_path, image_path))
+        return SuccessResponse[dict[str, str]](
+            message=SuccessMessage.ARTWORK_UPDATED,
+            data={"track_path": track_path, "image_path": image_path},
+        )
+
+    def remove_artwork(self, track_path: str):
+        self.remove_calls.append(track_path)
+        return SuccessResponse[dict[str, str]](
+            message=SuccessMessage.ARTWORK_REMOVED,
+            data={"track_path": track_path},
+        )
+
+
 def test_metadata_update_persists_to_file(tmp_path):
     sample_audio_file = tmp_path / "sample.mp3"
     sample_audio_file.touch()
@@ -115,3 +135,61 @@ def test_update_metadata_propagates_bridge_failure(tmp_path):
     assert response.status is False
     assert response.message is ErrorMessage.RUST_BACKEND_OPERATION_FAILED
     assert response.data is None
+
+
+def test_replace_artwork_delegates_to_artwork_service(tmp_path):
+    sample_audio_file = tmp_path / "sample.mp3"
+    sample_audio_file.touch()
+    image_file = tmp_path / "cover.jpg"
+    image_file.write_bytes(b"\xFF\xD8\xFF\xE0cover")
+
+    bridge = _InMemoryMetadataBridge()
+    artwork_service = _FakeArtworkService()
+    controller = MetadataController(
+        metadata_reader=bridge.read_metadata,
+        metadata_writer=bridge.write_metadata,
+        artwork_service=artwork_service,
+    )
+
+    response = controller.replace_artwork(str(sample_audio_file), str(image_file))
+
+    assert response.status is True
+    assert response.message is SuccessMessage.ARTWORK_UPDATED
+    assert artwork_service.replace_calls == [(str(sample_audio_file), str(image_file))]
+
+
+def test_replace_artwork_returns_error_for_empty_image_path(tmp_path):
+    sample_audio_file = tmp_path / "sample.mp3"
+    sample_audio_file.touch()
+
+    bridge = _InMemoryMetadataBridge()
+    controller = MetadataController(
+        metadata_reader=bridge.read_metadata,
+        metadata_writer=bridge.write_metadata,
+        artwork_service=_FakeArtworkService(),
+    )
+
+    response = controller.replace_artwork(str(sample_audio_file), "")
+
+    assert response.status is False
+    assert response.message is ErrorMessage.INVALID_ARTWORK_IMAGE
+    assert response.data is None
+
+
+def test_remove_artwork_delegates_to_artwork_service(tmp_path):
+    sample_audio_file = tmp_path / "sample.mp3"
+    sample_audio_file.touch()
+
+    bridge = _InMemoryMetadataBridge()
+    artwork_service = _FakeArtworkService()
+    controller = MetadataController(
+        metadata_reader=bridge.read_metadata,
+        metadata_writer=bridge.write_metadata,
+        artwork_service=artwork_service,
+    )
+
+    response = controller.remove_artwork(str(sample_audio_file))
+
+    assert response.status is True
+    assert response.message is SuccessMessage.ARTWORK_REMOVED
+    assert artwork_service.remove_calls == [str(sample_audio_file)]

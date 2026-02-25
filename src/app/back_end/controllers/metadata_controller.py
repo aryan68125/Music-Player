@@ -4,8 +4,14 @@ from collections.abc import Callable
 
 from pydantic import ValidationError
 
+from app.back_end.services.artwork_service import ArtworkService
 from app.back_end.services import rust_bridge
-from app.back_end.utils.class_method_request_models import MetadataValue, MetadataWriteRequest, TrackPathRequest
+from app.back_end.utils.class_method_request_models import (
+    ArtworkReplaceRequest,
+    MetadataValue,
+    MetadataWriteRequest,
+    TrackPathRequest,
+)
 from app.back_end.utils.class_method_response_models import ErrorResponse, MethodResponse
 from app.back_end.utils.error_messages import ErrorMessage
 
@@ -18,9 +24,11 @@ class MetadataController:
         self,
         metadata_reader: MetadataReader | None = None,
         metadata_writer: MetadataWriter | None = None,
+        artwork_service: ArtworkService | None = None,
     ) -> None:
         self._metadata_reader = metadata_reader or rust_bridge.read_metadata
         self._metadata_writer = metadata_writer or rust_bridge.write_metadata
+        self._artwork_service = artwork_service or ArtworkService()
 
     def read_metadata(self, path: str) -> MethodResponse[dict[str, str]]:
         try:
@@ -43,6 +51,22 @@ class MetadataController:
             return ErrorResponse(message=ErrorMessage.INVALID_METADATA_CHANGES)
 
         return self._metadata_writer(request.path, request.changes)
+
+    def replace_artwork(self, track_path: str, image_path: str) -> MethodResponse[dict[str, str]]:
+        try:
+            request = ArtworkReplaceRequest(track_path=track_path, image_path=image_path)
+        except ValidationError:
+            return ErrorResponse(message=ErrorMessage.INVALID_ARTWORK_IMAGE)
+
+        return self._artwork_service.replace_artwork(request.track_path, request.image_path)
+
+    def remove_artwork(self, track_path: str) -> MethodResponse[dict[str, str]]:
+        try:
+            request = TrackPathRequest(path=track_path)
+        except ValidationError:
+            return ErrorResponse(message=ErrorMessage.TRACK_NOT_FOUND)
+
+        return self._artwork_service.remove_artwork(request.path)
 
     @staticmethod
     def _normalize_changes(changes: dict[str, MetadataValue]) -> dict[str, MetadataValue]:

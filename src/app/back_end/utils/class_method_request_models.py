@@ -57,3 +57,15 @@ class MetadataWriteRequest(BaseRequestModel):
         if not value:
             raise ValueError("Metadata changes cannot be empty.")
         return value
+
+
+class ArtworkReplaceRequest(BaseRequestModel):
+    track_path: str
+    image_path: str
+
+    @field_validator("track_path", "image_path")
+    @classmethod
+    def validate_non_empty_path(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Path cannot be empty.")
+        return value

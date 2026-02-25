@@ -266,18 +266,37 @@ class MainWindow(QMainWindow):
 
         dialog = MetadataEditorDialog(self)
         dialog.set_values_from_metadata(metadata_response.data)
+        dialog.set_artwork_bytes(self._resolve_track_artwork_bytes(track_path))
         if not dialog.exec():
             return
 
-        changes = dialog.changed_values()
-        if not changes:
+        metadata_changes = dialog.changed_values()
+        artwork_change = dialog.artwork_change_request()
+        if not metadata_changes and not artwork_change:
             QMessageBox.information(self, "Metadata", "No metadata changes to save.")
             return
 
-        write_response = self._metadata_controller.update_metadata(str(track_path), changes)
-        if not write_response.status:
-            QMessageBox.warning(self, "Metadata Error", write_response.message.value)
-            return
+        success_messages: list[str] = []
+        if metadata_changes:
+            write_response = self._metadata_controller.update_metadata(str(track_path), metadata_changes)
+            if not write_response.status:
+                QMessageBox.warning(self, "Metadata Error", write_response.message.value)
+                return
+            success_messages.append(write_response.message.value)
+
+        if artwork_change:
+            if artwork_change["action"] == "replace":
+                artwork_response = self._metadata_controller.replace_artwork(
+                    str(track_path),
+                    artwork_change["image_path"],
+                )
+            else:
+                artwork_response = self._metadata_controller.remove_artwork(str(track_path))
+
+            if not artwork_response.status:
+                QMessageBox.warning(self, "Artwork Error", artwork_response.message.value)
+                return
+            success_messages.append(artwork_response.message.value)
 
         refreshed = self._metadata_controller.read_metadata(str(track_path))
         if refreshed.status and isinstance(refreshed.data, dict):
@@ -287,16 +306,18 @@ class MainWindow(QMainWindow):
             )
 
         self._update_album_art(track_path)
-        QMessageBox.information(self, "Metadata Saved", write_response.message.value)
+        QMessageBox.information(self, "Metadata Saved", "\n".join(success_messages))
 
     def _update_album_art(self, path: Path) -> None:
+        self.now_playing_bar.set_album_art_bytes(self._resolve_track_artwork_bytes(path))
+
+    def _resolve_track_artwork_bytes(self, path: Path) -> bytes | None:
         rust_response = extract_artwork(str(path))
         if rust_response.status and rust_response.data.get("artwork_bytes"):
-            self.now_playing_bar.set_album_art_bytes(rust_response.data["artwork_bytes"])
-            return
+            return rust_response.data["artwork_bytes"]
 
         embedded = self._extract_embedded_album_art(path)
-        self.now_playing_bar.set_album_art_bytes(embedded)
+        return embedded
 
     @staticmethod
     def _extract_embedded_album_art(path: Path) -> bytes | None:
